@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{28326280-302F-4DC3-9169-C62070E298E4}</ProjectGuid>
+    <ProjectGuid>{4256625E-BFD5-46D7-8E3C-121AB08FA338}</ProjectGuid>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>Wave_Algorithm</RootNamespace>
-    <AssemblyName>Wave Algorithm</AssemblyName>
+    <RootNamespace>WaveAlgorithm</RootNamespace>
+    <AssemblyName>WaveAlgorithm</AssemblyName>
     <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

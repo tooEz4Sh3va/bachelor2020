@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // Общие сведения об этой сборке предоставляются следующим набором
 // набора атрибутов. Измените значения этих атрибутов для изменения сведений,
 // связанных со сборкой.
-[assembly: AssemblyTitle("Wave Algorithm")]
+[assembly: AssemblyTitle("WaveAlgorithm")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("Wave Algorithm")]
+[assembly: AssemblyProduct("WaveAlgorithm")]
 [assembly: AssemblyCopyright("Copyright ©  2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // Следующий GUID служит для идентификации библиотеки типов, если этот проект будет видимым для COM
-[assembly: Guid("28326280-302f-4dc3-9169-c62070e298e4")]
+[assembly: Guid("4256625e-bfd5-46d7-8e3c-121ab08fa338")]
 
 // Сведения о версии сборки состоят из указанных ниже четырех значений:
 //

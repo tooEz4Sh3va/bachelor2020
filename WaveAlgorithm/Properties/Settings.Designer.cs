@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace Wave_Algorithm.Properties
+namespace WaveAlgorithm.Properties
 {
 
 

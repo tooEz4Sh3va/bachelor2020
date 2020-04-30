@@ -1,4 +1,4 @@
-﻿namespace Wave_Algorithm
+﻿namespace WaveAlgorithm
 {
     partial class Form1
     {
