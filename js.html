@@ -1,0 +1,241 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+    <meta charset="utf-8">
+
+    <style>
+        table td {
+            padding: 10px;
+            border: 1px solid black;
+        }
+
+        p {
+            margin: 5px;
+        }
+
+        div {
+            padding: 5px;
+            border: 1px solid black;
+            margin: 5px;
+        }
+
+        td#empty {
+            background-color: #ffeefe;
+        }
+
+        td#wall {
+            background-color: #aa872a;
+        }
+
+        td#start {
+            background-color: #0000ff;
+        }
+
+        td#finish {
+            background-color: #ee2426;
+        }
+
+        select option#hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+<div id='tableContainer'>
+    <p> Map </p>
+</div>
+
+<div id='modSelectorContainer'>
+    <p> Edit mode selector </p>
+
+    <input type='radio' name='mod' value='empty'> empty </p>
+    <input type='radio' name='mod' value='wall' checked> wall </p>
+    <input type='radio' name='mod' value='start'> start </p>
+    <input type='radio' name='mod' value='finish'> finish </p>
+</div>
+
+<div id='layerSelectorContainer'>
+    <p> Layer selector </p>
+
+    <select id="layerSelector">
+        <option value="0" selected>Layer #1</option>
+        <option value="1">Layer #2</option>
+        <option value="2">Layer #3</option>
+        <option value="3">Layer #4</option>
+    </select>
+    <p><input type='radio' name='layerCheck' value='1' checked> 2-dimensional mode</p>
+    <p><input type='radio' name='layerCheck' value='0'> 3-dimensional mode</p>
+</div>
+
+<div id='buttonsContainer'>
+    <p> Route tracing </p>
+
+    <input type="button" id="start" value="Start" />
+    <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
+    <input type="button" id="next" value="Next Step" />
+</div>
+
+<script>
+    const mods = ['empty', 'wall', 'start', 'finish'];
+    const config = {
+        mapSize: {
+            x: 7,
+            y: 7,
+            z: 4
+        }
+    };
+    let twoDim = true;
+    const map = [];
+    initMap();
+
+    let modButtons = document.getElementsByName('mod');
+    let currentMod = 'wall';
+    initModSelector();
+
+    let layersSelect = document.getElementById('layerSelector');
+    let dimButtons = document.getElementsByName('layerCheck');
+    let currentZ = 0;
+    initLayerSelector();
+
+    let table;
+    table = getNewTable();
+    updateTable(map[currentZ]);
+
+
+    function initModSelector() {
+        for (let i = 0; i < modButtons.length; i++) {
+            modButtons[i].onchange = selectChange;
+        }
+
+        function selectChange() {
+            currentMod = this.value;
+        }
+    }
+
+    function initLayerSelector() {
+        layersSelect.addEventListener('change', layerChange);
+
+        updateDimMod();
+
+        function layerChange() {
+            if (currentZ !== this.value) {
+                currentZ = this.value;
+                table = getNewTable();
+                updateTable(map[currentZ])
+            }
+        }
+
+
+        for (let i = 0; i < dimButtons.length; i++) {
+            dimButtons[i].onchange = dimChange;
+        }
+
+        function dimChange() {
+            twoDim = this.value === '1';
+            updateDimMod();
+            currentZ = 0;
+            table = getNewTable();
+            updateTable(map[currentZ])
+        }
+    }
+
+    function updateDimMod() {
+        if (twoDim) {
+            Array.from(layersSelect.options).forEach(option => {
+                if (option.value !== 0) {
+                    option.hidden = true;
+                    option.selected = false;
+                } else {
+                    option.selected = true;
+                    layersSelect.selectedIndex = 0;
+                }
+            });
+        } else {
+            Array.from(layersSelect.options).forEach(option => {
+                option.hidden = false
+            })
+        }
+    }
+
+    function initMap() {
+        for (let u = 0; u < config.mapSize.z; u++) {
+            const plane = [];
+            for (let i = 0; i < config.mapSize.x; i++) {
+                const row = [];
+                for (let j = 0; j < config.mapSize.y; j++) {
+                    row.push({
+                        mode: 0
+                    });
+                }
+                plane.push(row);
+            }
+            map.push(plane);
+        }
+
+    }
+
+    function updateTable(twoDimArray) {
+        for (let i = 0; i < twoDimArray.length; i++) {
+            const row = twoDimArray[i];
+            const tr = document.createElement('tr');
+            for (let j = 0; j < row.length; j++) {
+                const cell = row[j];
+                const td = document.createElement('td');
+                td.innerHTML = cell.mode;
+                td.id = mods[cell.mode];
+                td.data = {
+                    x: i,
+                    y: j
+                };
+
+                td.addEventListener('click', function tdClick() {
+                    updateCell(this);
+                });
+
+                tr.appendChild(td)
+            }
+            table.appendChild(tr)
+        }
+    }
+
+    function updateCell(td) {
+        td.innerHTML = mods.indexOf(currentMod);
+        updateMapCell(td.data.x, td.data.y);
+        td.id = currentMod;
+    }
+
+    function updateMapCell(x, y) {
+        map[currentZ][x][y].mode = mods.indexOf(currentMod);
+        console.log(map);
+    }
+
+    function clearTable() {
+        table = document.getElementById('table');
+        if (table) {
+            table.remove();
+            // parent.delete(table);
+        }
+    }
+
+    function getNewTable() {
+        const parent = document.getElementById('tableContainer');
+
+        clearTable(parent);
+        let table = document.createElement('table');
+        table.id = 'table';
+
+        parent.appendChild(table);
+        return table;
+    }
+
+    console.log(map);
+
+</script>
+
+
+</body>
+
+</html>
