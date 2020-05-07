@@ -57,37 +57,39 @@
     <input type='radio' name='mod' value='finish'> finish </p>
 </div>
 
-<div id='layerSelectorContainer'>
-    <p> Layer selector </p>
+<!--<div id='layerSelectorContainer'>-->
+<!--    <p> Layer selector </p>-->
 
-    <select id="layerSelector">
-        <option value="0" selected>Layer #1</option>
-        <option value="1">Layer #2</option>
-        <option value="2">Layer #3</option>
-        <option value="3">Layer #4</option>
-    </select>
-    <p><input type='radio' name='layerCheck' value='1' checked> 2-dimensional mode</p>
-    <p><input type='radio' name='layerCheck' value='0'> 3-dimensional mode</p>
-</div>
+<!--    <select id="layerSelector">-->
+<!--        <option value="0" selected>Layer #1</option>-->
+<!--        <option value="1">Layer #2</option>-->
+<!--        <option value="2">Layer #3</option>-->
+<!--        <option value="3">Layer #4</option>-->
+<!--    </select>-->
+<!--    <p><input type='radio' name='layerCheck' value='1' checked> 2-dimensional mode</p>-->
+<!--    <p><input type='radio' name='layerCheck' value='0'> 3-dimensional mode</p>-->
+<!--</div>-->
 
 <div id='buttonsContainer'>
     <p> Route tracing </p>
 
-    <input type="button" id="start" value="Start" />
+    <input type="button" id="start" value="Start"/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
-    <input type="button" id="next" value="Next Step" />
+    <input type="button" id="next" value="Next Step"/>
 </div>
 
 <script>
     const mods = ['empty', 'wall', 'start', 'finish'];
     const config = {
         mapSize: {
-            x: 7,
-            y: 7,
+            x: prompt('Enter the width of the map you want to create:', '7'),
+            y: prompt('Enter the heights of the map you want to create:', '7'),
             z: 4
         }
     };
     let twoDim = true;
+    let startPlased = false;
+    let finishPlased = false;
     const map = [];
     initMap();
 
@@ -95,10 +97,10 @@
     let currentMod = 'wall';
     initModSelector();
 
-    let layersSelect = document.getElementById('layerSelector');
-    let dimButtons = document.getElementsByName('layerCheck');
+    // let layersSelect = document.getElementById('layerSelector');
+    // let dimButtons = document.getElementsByName('layerCheck');
     let currentZ = 0;
-    initLayerSelector();
+    // initLayerSelector();
 
     let table;
     table = getNewTable();
@@ -163,9 +165,9 @@
     function initMap() {
         for (let u = 0; u < config.mapSize.z; u++) {
             const plane = [];
-            for (let i = 0; i < config.mapSize.x; i++) {
+            for (let i = 0; i < config.mapSize.y; i++) {
                 const row = [];
-                for (let j = 0; j < config.mapSize.y; j++) {
+                for (let j = 0; j < config.mapSize.x; j++) {
                     row.push({
                         mode: 0
                     });
@@ -202,9 +204,26 @@
     }
 
     function updateCell(td) {
-        td.innerHTML = mods.indexOf(currentMod);
-        updateMapCell(td.data.x, td.data.y);
-        td.id = currentMod;
+        if (currentMod === 'start' && startPlased) {
+            alert('There should be only one start, please select other block')
+        } else if (currentMod === 'finish' && finishPlased) {
+            alert('There should be only one finish, please select other block')
+        } else {
+            if (currentMod === 'start') {
+                startPlased = true;
+            } else if (currentMod === 'finish') {
+                finishPlased = true;
+            }
+            if (td.id === 'start') {
+                startPlased = false
+            } else if (td.id === 'finish') {
+                finishPlased = false
+            }
+
+            td.innerHTML = mods.indexOf(currentMod);
+            updateMapCell(td.data.x, td.data.y);
+            td.id = currentMod;
+        }
     }
 
     function updateMapCell(x, y) {
