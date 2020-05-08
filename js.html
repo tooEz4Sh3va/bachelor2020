@@ -36,6 +36,11 @@
             background-color: #ee2426;
         }
 
+        td#path {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
         select option#hidden {
             display: none;
         }
@@ -51,58 +56,61 @@
 <div id='modSelectorContainer'>
     <p> Edit mode selector </p>
 
-    <input type='radio' name='mod' value='empty'> empty </p>
-    <input type='radio' name='mod' value='wall' checked> wall </p>
+    <input type='radio' name='mod' value='empty' checked> empty </p>
+    <input type='radio' name='mod' value='wall'> wall </p>
     <input type='radio' name='mod' value='start'> start </p>
     <input type='radio' name='mod' value='finish'> finish </p>
 </div>
 
-<div id='layerSelectorContainer'>
-    <p> Layer selector </p>
+<!--<div id='layerSelectorContainer'>-->
+<!--    <p> Layer selector </p>-->
 
-    <select id="layerSelector">
-        <option value="0" selected>Layer #1</option>
-        <option value="1">Layer #2</option>
-        <option value="2">Layer #3</option>
-        <option value="3">Layer #4</option>
-    </select>
-    <p><input type='radio' name='layerCheck' value='1' checked> 2-dimensional mode</p>
-    <p><input type='radio' name='layerCheck' value='0'> 3-dimensional mode</p>
-</div>
+<!--    <select id="layerSelector">-->
+<!--        <option value="0" selected>Layer #1</option>-->
+<!--        <option value="1">Layer #2</option>-->
+<!--        <option value="2">Layer #3</option>-->
+<!--        <option value="3">Layer #4</option>-->
+<!--    </select>-->
+<!--    <p><input type='radio' name='layerCheck' value='1' checked> 2-dimensional mode</p>-->
+<!--    <p><input type='radio' name='layerCheck' value='0'> 3-dimensional mode</p>-->
+<!--</div>-->
 
 <div id='buttonsContainer'>
     <p> Route tracing </p>
 
-    <input type="button" id="start" value="Start" />
+    <input type="button" id="start" value="Start"/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
-    <input type="button" id="next" value="Next Step" />
+    <input type="button" id="next" value="Next Step"/>
 </div>
 
 <script>
-    const mods = ['empty', 'wall', 'start', 'finish'];
+    const mods = ['empty', 'wall', 'start', 'finish', 'path'];
     const config = {
         mapSize: {
-            x: 7,
-            y: 7,
+            x: prompt('Enter the width of the map you want to create:', '7') || 1,
+            y: prompt('Enter the heights of the map you want to create:', '7') || 1,
             z: 4
         }
     };
     let twoDim = true;
+    let startPosition = null;
+    let finishPosition = null;
     const map = [];
     initMap();
 
     let modButtons = document.getElementsByName('mod');
-    let currentMod = 'wall';
+    let currentMod = 'empty';
     initModSelector();
 
-    let layersSelect = document.getElementById('layerSelector');
-    let dimButtons = document.getElementsByName('layerCheck');
-    let currentZ = 0;
-    initLayerSelector();
+    // let layersSelect = document.getElementById('layerSelector');
+    // let dimButtons = document.getElementsByName('layerCheck');
+    // let currentZ = 0;
+    // initLayerSelector();
+
+    initStarter();
 
     let table;
-    table = getNewTable();
-    updateTable(map[currentZ]);
+    updateTable(map);
 
 
     function initModSelector() {
@@ -123,8 +131,7 @@
         function layerChange() {
             if (currentZ !== this.value) {
                 currentZ = this.value;
-                table = getNewTable();
-                updateTable(map[currentZ])
+                updateTable(map)
             }
         }
 
@@ -137,8 +144,7 @@
             twoDim = this.value === '1';
             updateDimMod();
             currentZ = 0;
-            table = getNewTable();
-            updateTable(map[currentZ])
+            updateTable(map)
         }
     }
 
@@ -160,39 +166,42 @@
         }
     }
 
+    function initStarter() {
+        const startButton = document.getElementById('start');
+
+        startButton.onclick = waveStart;
+    }
+
     function initMap() {
-        for (let u = 0; u < config.mapSize.z; u++) {
-            const plane = [];
             for (let i = 0; i < config.mapSize.x; i++) {
                 const row = [];
                 for (let j = 0; j < config.mapSize.y; j++) {
                     row.push({
-                        mode: 0
+                        mode: 0,
+                        position: {
+                            x: i,
+                            y: j
+                        }
                     });
                 }
-                plane.push(row);
+                map.push(row);
             }
-            map.push(plane);
-        }
-
     }
 
     function updateTable(twoDimArray) {
+        table = getNewTable();
+
         for (let i = 0; i < twoDimArray.length; i++) {
-            const row = twoDimArray[i];
+            const column = twoDimArray[i];
             const tr = document.createElement('tr');
-            for (let j = 0; j < row.length; j++) {
-                const cell = row[j];
+            for (let j = 0; j < column.length; j++) {
+                const cell = column[j];
                 const td = document.createElement('td');
-                td.innerHTML = cell.mode;
                 td.id = mods[cell.mode];
-                td.data = {
-                    x: i,
-                    y: j
-                };
+                updateCell(td, cell.waveIndex);
 
                 td.addEventListener('click', function tdClick() {
-                    updateCell(this);
+                    setCell(this, cell);
                 });
 
                 tr.appendChild(td)
@@ -201,15 +210,32 @@
         }
     }
 
-    function updateCell(td) {
-        td.innerHTML = mods.indexOf(currentMod);
-        updateMapCell(td.data.x, td.data.y);
-        td.id = currentMod;
+    function updateCell(td, waveIndex) {
+        if (waveIndex > 0) td.innerHTML = waveIndex + '';
     }
 
-    function updateMapCell(x, y) {
-        map[currentZ][x][y].mode = mods.indexOf(currentMod);
-        console.log(map);
+    function setCell(td, cell) {
+        if (currentMod === 'start' && startPosition) {
+            alert('There should be only one start, please select other block')
+        } else if (currentMod === 'finish' && finishPosition) {
+            alert('There should be only one finish, please select other block')
+        } else {
+            if (currentMod === 'start') {
+                startPosition = {x: cell.position.x, y: cell.position.y};
+            } else if (currentMod === 'finish') {
+                finishPosition = {x: cell.position.x, y: cell.position.y};
+            }
+            if (td.id === 'start') {
+                startPosition = null;
+            } else if (td.id === 'finish') {
+                finishPosition = null;
+            }
+            td.id = currentMod;
+
+            updateCell(td, cell.waveIndex);
+            map[cell.position.x][cell.position.y].mode = mods.indexOf(currentMod);
+
+        }
     }
 
     function clearTable() {
@@ -229,6 +255,123 @@
 
         parent.appendChild(table);
         return table;
+    }
+
+    // wave algo section! BEWARE!!!
+
+    let elementsQueue = [];
+    let nextElements = [];
+    let currentWaveIndex = 0;
+    let currentBackIndex = 0;
+    let finishFound = false;
+
+    function waveStep(position) {
+        const x = position.x;
+        const y = position.y;
+
+        if (map[x + 1] && map[x + 1][y] && !map[x + 1][y].waveIndex) {
+            if (map[x + 1][y].mode === 0) {
+                map [x + 1][y].waveIndex = currentWaveIndex + 1;
+                nextElements.push({x: x + 1, y: y})
+            } else if (map[x + 1][y].mode === 3) {
+                finishFound = true;
+                map [x + 1][y].waveIndex = currentWaveIndex + 1;
+            }
+        }
+
+        if (map[x - 1] && map[x - 1][y] && !map[x - 1][y].waveIndex) {
+            if (map[x - 1][y].mode === 0) {
+                map [x - 1][y].waveIndex = currentWaveIndex + 1;
+                nextElements.push({x: x - 1, y: y})
+            } else if (map[x - 1][y].mode === 3) {
+                finishFound = true;
+                map [x - 1][y].waveIndex = currentWaveIndex + 1;
+            }
+        }
+
+        if (map[x] && map[x][y + 1] && !map[x][y + 1].waveIndex) {
+            if (map[x][y + 1].mode === 0) {
+                map [x][y + 1].waveIndex = currentWaveIndex + 1;
+                nextElements.push({x: x, y: y + 1})
+            } else if (map[x][y + 1].mode === 3) {
+                finishFound = true;
+                map [x][y + 1].waveIndex = currentWaveIndex + 1;
+            }
+        }
+
+        if (map[x] && map[x][y - 1] && !map[x][y - 1].waveIndex) {
+            if (map[x][y - 1].mode === 0) {
+                map [x][y - 1].waveIndex = currentWaveIndex + 1;
+                nextElements.push({x: x, y: y - 1})
+            } else if (map[x][y - 1].mode === 3) {
+                finishFound = true;
+                map [x][y - 1].waveIndex = currentWaveIndex + 1;
+            }
+        }
+
+    }
+
+    function waveStart() {
+        if (startPosition && finishPosition) {
+            waveStep(startPosition);
+            currentWaveIndex++;
+            while (nextElements[0]) {
+                elementsQueue = nextElements;
+                nextElements = [];
+
+                while (elementsQueue[0]) {
+                    waveStep(elementsQueue[0]);
+                    elementsQueue.splice(0, 1);
+                    if (finishFound) break;
+                }
+                currentWaveIndex++;
+                updateTable(map);
+                console.log('step ended');
+                if (finishFound) {
+                    currentBackIndex = currentWaveIndex;
+                    currentWaveIndex = 0;
+                    break
+                }
+            }
+            console.log('wave ended');
+
+            findWayHome()
+        }
+    }
+
+    function comeBackStep(position) {
+        // выбрать среди соседних ячейку, помеченную числом на 1 меньше числа в текущей ячейке
+        // перейти в выбранную ячейку и добавить её к пути
+
+        const x = position.x;
+        const y = position.y;
+
+        if (map[x + 1] && map[x + 1][y] && map[x + 1][y].waveIndex && map [x + 1][y].waveIndex + 1 === currentBackIndex) {
+                map[x + 1][y].mode = 4;
+                return map[x + 1][y];
+        } else if (map[x - 1] && map[x - 1][y] && map[x - 1][y].waveIndex && map [x - 1][y].waveIndex + 1 === currentBackIndex) {
+                map[x - 1][y].mode = 4;
+                return map[x - 1][y];
+        } else if (map[x] && map[x][y + 1] && map[x][y + 1].waveIndex && map [x][y + 1].waveIndex + 1 === currentBackIndex) {
+                map[x][y + 1].mode = 4;
+                return map[x][y + 1];
+        } else if (map[x] && map[x][y - 1] && map[x][y - 1].waveIndex && map [x][y - 1].waveIndex + 1 === currentBackIndex) {
+                map[x][y - 1].mode = 4;
+                return map[x][y - 1];
+        }
+    }
+
+    function findWayHome() {
+        if (startPosition && finishPosition) {
+            let currentCell = map[finishPosition.x][finishPosition.y];
+            while (currentCell && currentCell.mode !== 2) {
+                currentCell = comeBackStep(currentCell.position);
+                console.log('step back found');
+                updateTable(map);
+                currentBackIndex--;
+            }
+            console.log('way home found');
+        }
     }
 
     console.log(map);
