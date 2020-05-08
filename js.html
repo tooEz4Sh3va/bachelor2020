@@ -36,6 +36,11 @@
             background-color: #ee2426;
         }
 
+        td#path {
+            background-color: #000000;
+            color: #ffffff;
+        }
+
         select option#hidden {
             display: none;
         }
@@ -79,7 +84,7 @@
 </div>
 
 <script>
-    const mods = ['empty', 'wall', 'start', 'finish'];
+    const mods = ['empty', 'wall', 'start', 'finish', 'path'];
     const config = {
         mapSize: {
             x: prompt('Enter the width of the map you want to create:', '7') || 1,
@@ -99,13 +104,13 @@
 
     // let layersSelect = document.getElementById('layerSelector');
     // let dimButtons = document.getElementsByName('layerCheck');
-    let currentZ = 0;
+    // let currentZ = 0;
     // initLayerSelector();
 
     initStarter();
 
     let table;
-    updateTable(map[currentZ]);
+    updateTable(map);
 
 
     function initModSelector() {
@@ -126,7 +131,7 @@
         function layerChange() {
             if (currentZ !== this.value) {
                 currentZ = this.value;
-                updateTable(map[currentZ])
+                updateTable(map)
             }
         }
 
@@ -139,7 +144,7 @@
             twoDim = this.value === '1';
             updateDimMod();
             currentZ = 0;
-            updateTable(map[currentZ])
+            updateTable(map)
         }
     }
 
@@ -168,36 +173,35 @@
     }
 
     function initMap() {
-        for (let u = 0; u < config.mapSize.z; u++) {
-            const plane = [];
-            for (let i = 0; i < config.mapSize.y; i++) {
+            for (let i = 0; i < config.mapSize.x; i++) {
                 const row = [];
-                for (let j = 0; j < config.mapSize.x; j++) {
+                for (let j = 0; j < config.mapSize.y; j++) {
                     row.push({
-                        mode: 0
+                        mode: 0,
+                        position: {
+                            x: i,
+                            y: j
+                        }
                     });
                 }
-                plane.push(row);
+                map.push(row);
             }
-            map.push(plane);
-        }
-
     }
 
     function updateTable(twoDimArray) {
         table = getNewTable();
 
         for (let i = 0; i < twoDimArray.length; i++) {
-            const row = twoDimArray[i];
+            const column = twoDimArray[i];
             const tr = document.createElement('tr');
-            for (let j = 0; j < row.length; j++) {
-                const cell = row[j];
+            for (let j = 0; j < column.length; j++) {
+                const cell = column[j];
                 const td = document.createElement('td');
                 td.id = mods[cell.mode];
-                updateCell(td, i, j, cell.waveIndex);
+                updateCell(td, cell.waveIndex);
 
                 td.addEventListener('click', function tdClick() {
-                    setCell(this, i, j, cell.waveIndex);
+                    setCell(this, cell);
                 });
 
                 tr.appendChild(td)
@@ -206,20 +210,20 @@
         }
     }
 
-    function updateCell(td, x, y, waveIndex) {
+    function updateCell(td, waveIndex) {
         if (waveIndex > 0) td.innerHTML = waveIndex + '';
     }
 
-    function setCell(td, x, y, waveIndex) {
+    function setCell(td, cell) {
         if (currentMod === 'start' && startPosition) {
             alert('There should be only one start, please select other block')
         } else if (currentMod === 'finish' && finishPosition) {
             alert('There should be only one finish, please select other block')
         } else {
             if (currentMod === 'start') {
-                startPosition = {x: x, y: y};
+                startPosition = {x: cell.position.x, y: cell.position.y};
             } else if (currentMod === 'finish') {
-                finishPosition = {x: x, y: y};
+                finishPosition = {x: cell.position.x, y: cell.position.y};
             }
             if (td.id === 'start') {
                 startPosition = null;
@@ -228,8 +232,8 @@
             }
             td.id = currentMod;
 
-            updateCell(td, x, y, waveIndex);
-            map[currentZ][x][y].mode = mods.indexOf(currentMod);
+            updateCell(td, cell.waveIndex);
+            map[cell.position.x][cell.position.y].mode = mods.indexOf(currentMod);
 
         }
     }
@@ -258,50 +262,50 @@
     let elementsQueue = [];
     let nextElements = [];
     let currentWaveIndex = 0;
+    let currentBackIndex = 0;
     let finishFound = false;
 
-    function waveStep(pos) {
-        const currentMap = map[currentZ];
-        const x = pos.x;
-        const y = pos.y;
+    function waveStep(position) {
+        const x = position.x;
+        const y = position.y;
 
-        if (currentMap[x + 1] && currentMap[x + 1][y] && !currentMap[x + 1][y].waveIndex) {
-            if (currentMap[x + 1][y].mode === 0) {
-                currentMap [x + 1][y].waveIndex = currentWaveIndex + 1;
+        if (map[x + 1] && map[x + 1][y] && !map[x + 1][y].waveIndex) {
+            if (map[x + 1][y].mode === 0) {
+                map [x + 1][y].waveIndex = currentWaveIndex + 1;
                 nextElements.push({x: x + 1, y: y})
-            } else if (currentMap[x + 1][y].mode === 3) {
+            } else if (map[x + 1][y].mode === 3) {
                 finishFound = true;
-                currentMap [x + 1][y].waveIndex = currentWaveIndex + 1;
+                map [x + 1][y].waveIndex = currentWaveIndex + 1;
             }
         }
 
-        if (currentMap[x - 1] && currentMap[x - 1][y] && !currentMap[x - 1][y].waveIndex) {
-            if (currentMap[x - 1][y].mode === 0) {
-                currentMap [x - 1][y].waveIndex = currentWaveIndex + 1;
+        if (map[x - 1] && map[x - 1][y] && !map[x - 1][y].waveIndex) {
+            if (map[x - 1][y].mode === 0) {
+                map [x - 1][y].waveIndex = currentWaveIndex + 1;
                 nextElements.push({x: x - 1, y: y})
-            } else if (currentMap[x - 1][y].mode === 3) {
+            } else if (map[x - 1][y].mode === 3) {
                 finishFound = true;
-                currentMap [x - 1][y].waveIndex = currentWaveIndex + 1;
+                map [x - 1][y].waveIndex = currentWaveIndex + 1;
             }
         }
 
-        if (currentMap[x] && currentMap[x][y + 1] && !currentMap[x][y + 1].waveIndex) {
-            if (currentMap[x][y + 1].mode === 0) {
-                currentMap [x][y + 1].waveIndex = currentWaveIndex + 1;
+        if (map[x] && map[x][y + 1] && !map[x][y + 1].waveIndex) {
+            if (map[x][y + 1].mode === 0) {
+                map [x][y + 1].waveIndex = currentWaveIndex + 1;
                 nextElements.push({x: x, y: y + 1})
-            } else if (currentMap[x][y + 1].mode === 3) {
+            } else if (map[x][y + 1].mode === 3) {
                 finishFound = true;
-                currentMap [x][y + 1].waveIndex = currentWaveIndex + 1;
+                map [x][y + 1].waveIndex = currentWaveIndex + 1;
             }
         }
 
-        if (currentMap[x] && currentMap[x][y - 1] && !currentMap[x][y - 1].waveIndex) {
-            if (currentMap[x][y - 1].mode === 0) {
-                currentMap [x][y - 1].waveIndex = currentWaveIndex + 1;
+        if (map[x] && map[x][y - 1] && !map[x][y - 1].waveIndex) {
+            if (map[x][y - 1].mode === 0) {
+                map [x][y - 1].waveIndex = currentWaveIndex + 1;
                 nextElements.push({x: x, y: y - 1})
-            } else if (currentMap[x][y - 1].mode === 3) {
+            } else if (map[x][y - 1].mode === 3) {
                 finishFound = true;
-                currentMap [x][y - 1].waveIndex = currentWaveIndex + 1;
+                map [x][y - 1].waveIndex = currentWaveIndex + 1;
             }
         }
 
@@ -319,16 +323,55 @@
                     waveStep(elementsQueue[0]);
                     elementsQueue.splice(0, 1);
                     if (finishFound) break;
-                    // if (finishFound) elementsQueue = [];
                 }
                 currentWaveIndex++;
-                updateTable(map[currentZ]);
+                updateTable(map);
                 console.log('step ended');
-                if (finishFound) break;
-                // if (finishFound) nextElements = [];
+                if (finishFound) {
+                    currentBackIndex = currentWaveIndex;
+                    currentWaveIndex = 0;
+                    break
+                }
             }
+            console.log('wave ended');
+
+            findWayHome()
         }
-        console.log('wave ended');
+    }
+
+    function comeBackStep(position) {
+        // выбрать среди соседних ячейку, помеченную числом на 1 меньше числа в текущей ячейке
+        // перейти в выбранную ячейку и добавить её к пути
+
+        const x = position.x;
+        const y = position.y;
+
+        if (map[x + 1] && map[x + 1][y] && map[x + 1][y].waveIndex && map [x + 1][y].waveIndex + 1 === currentBackIndex) {
+                map[x + 1][y].mode = 4;
+                return map[x + 1][y];
+        } else if (map[x - 1] && map[x - 1][y] && map[x - 1][y].waveIndex && map [x - 1][y].waveIndex + 1 === currentBackIndex) {
+                map[x - 1][y].mode = 4;
+                return map[x - 1][y];
+        } else if (map[x] && map[x][y + 1] && map[x][y + 1].waveIndex && map [x][y + 1].waveIndex + 1 === currentBackIndex) {
+                map[x][y + 1].mode = 4;
+                return map[x][y + 1];
+        } else if (map[x] && map[x][y - 1] && map[x][y - 1].waveIndex && map [x][y - 1].waveIndex + 1 === currentBackIndex) {
+                map[x][y - 1].mode = 4;
+                return map[x][y - 1];
+        }
+    }
+
+    function findWayHome() {
+        if (startPosition && finishPosition) {
+            let currentCell = map[finishPosition.x][finishPosition.y];
+            while (currentCell && currentCell.mode !== 2) {
+                currentCell = comeBackStep(currentCell.position);
+                console.log('step back found');
+                updateTable(map);
+                currentBackIndex--;
+            }
+            console.log('way home found');
+        }
     }
 
     console.log(map);
