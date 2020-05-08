@@ -51,8 +51,8 @@
 <div id='modSelectorContainer'>
     <p> Edit mode selector </p>
 
-    <input type='radio' name='mod' value='empty'> empty </p>
-    <input type='radio' name='mod' value='wall' checked> wall </p>
+    <input type='radio' name='mod' value='empty' checked> empty </p>
+    <input type='radio' name='mod' value='wall' > wall </p>
     <input type='radio' name='mod' value='start'> start </p>
     <input type='radio' name='mod' value='finish'> finish </p>
 </div>
@@ -82,19 +82,19 @@
     const mods = ['empty', 'wall', 'start', 'finish'];
     const config = {
         mapSize: {
-            x: prompt('Enter the width of the map you want to create:', '7'),
-            y: prompt('Enter the heights of the map you want to create:', '7'),
+            x: prompt('Enter the width of the map you want to create:', '7') || 1,
+            y: prompt('Enter the heights of the map you want to create:', '7') || 1,
             z: 4
         }
     };
     let twoDim = true;
-    let startPlased = false;
-    let finishPlased = false;
+    let startPosition = null;
+    let finishPosition = null;
     const map = [];
     initMap();
 
     let modButtons = document.getElementsByName('mod');
-    let currentMod = 'wall';
+    let currentMod = 'empty';
     initModSelector();
 
     // let layersSelect = document.getElementById('layerSelector');
@@ -102,8 +102,9 @@
     let currentZ = 0;
     // initLayerSelector();
 
+    initStarter();
+
     let table;
-    table = getNewTable();
     updateTable(map[currentZ]);
 
 
@@ -125,7 +126,6 @@
         function layerChange() {
             if (currentZ !== this.value) {
                 currentZ = this.value;
-                table = getNewTable();
                 updateTable(map[currentZ])
             }
         }
@@ -139,7 +139,6 @@
             twoDim = this.value === '1';
             updateDimMod();
             currentZ = 0;
-            table = getNewTable();
             updateTable(map[currentZ])
         }
     }
@@ -162,6 +161,12 @@
         }
     }
 
+    function initStarter() {
+        const startButton = document.getElementById('start');
+
+        startButton.onclick = waveStart;
+    }
+
     function initMap() {
         for (let u = 0; u < config.mapSize.z; u++) {
             const plane = [];
@@ -180,21 +185,19 @@
     }
 
     function updateTable(twoDimArray) {
+        table = getNewTable();
+
         for (let i = 0; i < twoDimArray.length; i++) {
             const row = twoDimArray[i];
             const tr = document.createElement('tr');
             for (let j = 0; j < row.length; j++) {
                 const cell = row[j];
                 const td = document.createElement('td');
-                td.innerHTML = cell.mode;
                 td.id = mods[cell.mode];
-                td.data = {
-                    x: i,
-                    y: j
-                };
+                updateCell(td, i, j, cell.waveIndex);
 
                 td.addEventListener('click', function tdClick() {
-                    updateCell(this);
+                    setCell(this, i, j, cell.waveIndex);
                 });
 
                 tr.appendChild(td)
@@ -203,32 +206,32 @@
         }
     }
 
-    function updateCell(td) {
-        if (currentMod === 'start' && startPlased) {
+    function updateCell(td, x, y, waveIndex) {
+            if (waveIndex > 0) td.innerHTML = waveIndex + '';
+    }
+
+    function setCell(td, x, y, waveIndex) {
+        if (currentMod === 'start' && startPosition) {
             alert('There should be only one start, please select other block')
-        } else if (currentMod === 'finish' && finishPlased) {
+        } else if (currentMod === 'finish' && finishPosition) {
             alert('There should be only one finish, please select other block')
         } else {
             if (currentMod === 'start') {
-                startPlased = true;
+                startPosition = {x: x, y: y};
             } else if (currentMod === 'finish') {
-                finishPlased = true;
+                finishPosition = {x: x, y: y};
             }
             if (td.id === 'start') {
-                startPlased = false
+                startPosition = null;
             } else if (td.id === 'finish') {
-                finishPlased = false
+                finishPosition = null;
             }
-
-            td.innerHTML = mods.indexOf(currentMod);
-            updateMapCell(td.data.x, td.data.y);
             td.id = currentMod;
-        }
-    }
 
-    function updateMapCell(x, y) {
-        map[currentZ][x][y].mode = mods.indexOf(currentMod);
-        console.log(map);
+            updateCell(td, x, y, waveIndex);
+            map[currentZ][x][y].mode = mods.indexOf(currentMod);
+
+        }
     }
 
     function clearTable() {
@@ -248,6 +251,55 @@
 
         parent.appendChild(table);
         return table;
+    }
+
+    // wave algo section!
+
+    let elementsQueue = [];
+    let nextElements = [];
+    let currentWaveIndex = 0;
+
+    function waveStep(pos) {
+        const currentMap = map[currentZ];
+        const x = pos.x;
+        const y = pos.y;
+
+        if (currentMap[x + 1] && currentMap[x + 1][y]) if (!currentMap[x + 1][y].waveIndex && (currentMap[x + 1][y].mode === 0)) {
+            currentMap [x + 1][y].waveIndex = currentWaveIndex + 1;
+            nextElements.push({x: x + 1, y: y})
+        }
+        if (currentMap[x - 1] && currentMap[x - 1][y]) if (!currentMap[x - 1][y].waveIndex && (currentMap[x - 1][y].mode === 0)) {
+            currentMap [x - 1][y].waveIndex = currentWaveIndex + 1;
+            nextElements.push({x: x - 1, y: y})
+        }
+        if (currentMap[x] && currentMap[x][y + 1]) if (!currentMap[x][y + 1].waveIndex && (currentMap[x][y + 1].mode === 0)) {
+            currentMap [x][y + 1].waveIndex = currentWaveIndex + 1;
+            nextElements.push({x: x, y: y + 1})
+        }
+        if (currentMap[x] && currentMap[x][y - 1]) if (!currentMap[x][y - 1].waveIndex && (currentMap[x][y - 1].mode === 0)) {
+            currentMap [x][y - 1].waveIndex = currentWaveIndex + 1;
+            nextElements.push({x: x, y: y - 1})
+        }
+    }
+
+    function waveStart() {
+        if (startPosition && finishPosition) {
+            waveStep(startPosition);
+            currentWaveIndex++;
+            while (nextElements[0]) {
+                elementsQueue = nextElements;
+                nextElements = [];
+
+                while (elementsQueue[0]) {
+                    waveStep(elementsQueue[0]);
+                    elementsQueue.splice(0, 1);
+                }
+                currentWaveIndex++;
+                updateTable(map[currentZ]);
+                console.log('step ended');
+            }
+        }
+        console.log('wave ended');
     }
 
     console.log(map);
