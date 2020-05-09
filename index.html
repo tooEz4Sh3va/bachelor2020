@@ -7,16 +7,6 @@
     <meta charset="utf-8">
 
     <style>
-        /*@font-face {*/
-        /*    font-family: "foundation-icons";*/
-        /*    src: url("foundation-icons.eot");*/
-        /*    src: url("foundation-icons.eot?#iefix") format("embedded-opentype"),*/
-        /*    url("foundation-icons.woff") format("woff"),*/
-        /*    url("foundation-icons.ttf") format("truetype");*/
-        /*    font-weight: normal;*/
-        /*    font-style: normal;*/
-        /*}*/
-
         table td {
             padding: 5px;
             border: 1px solid black;
@@ -106,7 +96,7 @@
 
     <input type="button" id="start" value="Start"/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
-    <input type="button" id="next" value="Next Step"/>
+    <input type="button" id="next" value="Next Step" disabled="true"/>
 </div>
 
 <script>
@@ -133,6 +123,8 @@
     // let dimButtons = document.getElementsByName('layerCheck');
     // let currentZ = 0;
     // initLayerSelector();
+
+    let stepMode = false;
 
     initStarter();
 
@@ -197,6 +189,16 @@
         const startButton = document.getElementById('start');
 
         startButton.onclick = waveStart;
+
+        const nextButton = document.getElementById('next');
+        nextButton.onclick = nextStep();
+
+        const stepSwitch = document.getElementsByName('step');
+        stepSwitch[0].addEventListener('change', () => {
+            nextButton.disabled = stepMode;
+            stepMode = !stepMode;
+            console.log('stepMode', stepMode)
+        });
     }
 
     function initMap() {
@@ -430,6 +432,10 @@
             }
             console.log('way home found');
         }
+    }
+
+    function nextStep() {
+
     }
 
     console.log(map);
