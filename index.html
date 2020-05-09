@@ -2,12 +2,31 @@
 <html>
 
 <head>
+    <title>Danylo Shevchuk Bachelor</title>
+    <link rel="stylesheet" href="foundation-icons.css"/>
     <meta charset="utf-8">
 
     <style>
+        /*@font-face {*/
+        /*    font-family: "foundation-icons";*/
+        /*    src: url("foundation-icons.eot");*/
+        /*    src: url("foundation-icons.eot?#iefix") format("embedded-opentype"),*/
+        /*    url("foundation-icons.woff") format("woff"),*/
+        /*    url("foundation-icons.ttf") format("truetype");*/
+        /*    font-weight: normal;*/
+        /*    font-style: normal;*/
+        /*}*/
+
         table td {
-            padding: 10px;
+            padding: 5px;
             border: 1px solid black;
+            width: 25px;
+            height: 25px;
+            text-align: center;
+        }
+
+        p.h {
+            font-weight: bold;
         }
 
         p {
@@ -21,7 +40,7 @@
         }
 
         td#empty {
-            background-color: #ffeefe;
+            background-color: #ffffff;
         }
 
         td#wall {
@@ -37,29 +56,36 @@
         }
 
         td#path {
-            background-color: #000000;
+            background-color: rgba(31, 31, 31, 0.79);
             color: #ffffff;
+        }
+
+        i {
+            font-size: 18px;
         }
 
         select option#hidden {
             display: none;
         }
     </style>
+
+    <!--[if lte IE 8]>
+    <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+
 </head>
 
 <body>
 
 <div id='tableContainer'>
-    <p> Map </p>
+    <p class='h'> Map </p>
 </div>
 
 <div id='modSelectorContainer'>
-    <p> Edit mode selector </p>
-
-    <input type='radio' name='mod' value='empty' checked> empty </p>
-    <input type='radio' name='mod' value='wall'> wall </p>
-    <input type='radio' name='mod' value='start'> start </p>
-    <input type='radio' name='mod' value='finish'> finish </p>
+    <p class='h'> Edit mode selector </p>
+    <input type='radio' name='mod' value='empty' checked> Empty <i class="trash" style="color: #000000"></i></p>
+    <input type='radio' name='mod' value='wall'> Wall <i class="align-justify" style="color: #aa872a"></i></p>
+    <input type='radio' name='mod' value='start'> Start <i class="home" style="color: #0000ff"></i></p>
+    <input type='radio' name='mod' value='finish'> Finish <i class="flag" style="color: #ee2426"></i></p>
 </div>
 
 <!--<div id='layerSelectorContainer'>-->
@@ -76,7 +102,7 @@
 <!--</div>-->
 
 <div id='buttonsContainer'>
-    <p> Route tracing </p>
+    <p class='h'> Route tracing </p>
 
     <input type="button" id="start" value="Start"/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
@@ -85,6 +111,7 @@
 
 <script>
     const mods = ['empty', 'wall', 'start', 'finish', 'path'];
+    const modsContent = [false, 'align-justify', 'home', 'flag'];
     const config = {
         mapSize: {
             x: prompt('Enter the width of the map you want to create:', '7') || 1,
@@ -173,19 +200,19 @@
     }
 
     function initMap() {
-            for (let i = 0; i < config.mapSize.x; i++) {
-                const row = [];
-                for (let j = 0; j < config.mapSize.y; j++) {
-                    row.push({
-                        mode: 0,
-                        position: {
-                            x: i,
-                            y: j
-                        }
-                    });
-                }
-                map.push(row);
+        for (let i = 0; i < config.mapSize.x; i++) {
+            const row = [];
+            for (let j = 0; j < config.mapSize.y; j++) {
+                row.push({
+                    mode: 0,
+                    position: {
+                        x: i,
+                        y: j
+                    }
+                });
             }
+            map.push(row);
+        }
     }
 
     function updateTable(twoDimArray) {
@@ -198,7 +225,11 @@
                 const cell = column[j];
                 const td = document.createElement('td');
                 td.id = mods[cell.mode];
-                updateCell(td, cell.waveIndex);
+                updateCell(td, cell.content ? '' : cell.waveIndex);
+
+                if (cell.content) {
+                    addIcon(td, cell);
+                }
 
                 td.addEventListener('click', function tdClick() {
                     setCell(this, cell);
@@ -233,9 +264,23 @@
             td.id = currentMod;
 
             updateCell(td, cell.waveIndex);
-            map[cell.position.x][cell.position.y].mode = mods.indexOf(currentMod);
+            const index = mods.indexOf(currentMod);
+            cell.mode = index;
+            cell.content = modsContent[index] || null;
+
+            const icon = td.querySelectorAll('i');
+            if (icon[0]) {
+                icon[0].remove();
+            }
+            addIcon(td, cell);
 
         }
+    }
+
+    function addIcon(td, cell) {
+        const icon = document.createElement('i',);
+        icon.className = cell.content;
+        td.appendChild(icon);
     }
 
     function clearTable() {
@@ -312,30 +357,39 @@
     }
 
     function waveStart() {
-        if (startPosition && finishPosition) {
-            waveStep(startPosition);
-            currentWaveIndex++;
-            while (nextElements[0]) {
-                elementsQueue = nextElements;
-                nextElements = [];
-
-                while (elementsQueue[0]) {
-                    waveStep(elementsQueue[0]);
-                    elementsQueue.splice(0, 1);
-                    if (finishFound) break;
-                }
+        if (!startPosition) {
+            alert('Please mark starting position before running');
+        } else {
+            if (!finishPosition) {
+                alert('Please mark finish position before running');
+            } else {
+                waveStep(startPosition);
                 currentWaveIndex++;
-                updateTable(map);
-                console.log('step ended');
+                while (nextElements[0]) {
+                    elementsQueue = nextElements;
+                    nextElements = [];
+
+                    while (elementsQueue[0]) {
+                        waveStep(elementsQueue[0]);
+                        elementsQueue.splice(0, 1);
+                        if (finishFound) break;
+                    }
+                    currentWaveIndex++;
+                    updateTable(map);
+                    console.log('step ended');
+                    if (finishFound) {
+                        currentBackIndex = currentWaveIndex;
+                        currentWaveIndex = 0;
+                        break
+                    }
+                }
+                console.log('wave ended');
                 if (finishFound) {
-                    currentBackIndex = currentWaveIndex;
-                    currentWaveIndex = 0;
-                    break
+                    findWayHome();
+                } else {
+                    alert('Sadly to say, but I do not know da wae');
                 }
             }
-            console.log('wave ended');
-
-            findWayHome()
         }
     }
 
@@ -347,17 +401,21 @@
         const y = position.y;
 
         if (map[x + 1] && map[x + 1][y] && map[x + 1][y].waveIndex && map [x + 1][y].waveIndex + 1 === currentBackIndex) {
-                map[x + 1][y].mode = 4;
-                return map[x + 1][y];
+            map[x + 1][y].mode = 4;
+            map[x + 1][y].content = 'step arrow-up';
+            return map[x + 1][y];
         } else if (map[x - 1] && map[x - 1][y] && map[x - 1][y].waveIndex && map [x - 1][y].waveIndex + 1 === currentBackIndex) {
-                map[x - 1][y].mode = 4;
-                return map[x - 1][y];
+            map[x - 1][y].mode = 4;
+            map[x - 1][y].content = 'step arrow-down';
+            return map[x - 1][y];
         } else if (map[x] && map[x][y + 1] && map[x][y + 1].waveIndex && map [x][y + 1].waveIndex + 1 === currentBackIndex) {
-                map[x][y + 1].mode = 4;
-                return map[x][y + 1];
+            map[x][y + 1].mode = 4;
+            map[x][y + 1].content = 'step arrow-left';
+            return map[x][y + 1];
         } else if (map[x] && map[x][y - 1] && map[x][y - 1].waveIndex && map [x][y - 1].waveIndex + 1 === currentBackIndex) {
-                map[x][y - 1].mode = 4;
-                return map[x][y - 1];
+            map[x][y - 1].mode = 4;
+            map[x][y - 1].content = 'step arrow-right';
+            return map[x][y - 1];
         }
     }
 
