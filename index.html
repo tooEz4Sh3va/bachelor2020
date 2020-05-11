@@ -10,9 +10,10 @@
         table td {
             padding: 5px;
             border: 1px solid black;
-            width: 25px;
-            height: 25px;
+            width: 30px;
+            height: 30px;
             text-align: center;
+            font-size: 100%;
         }
 
         p.h {
@@ -66,8 +67,13 @@
 
 <body>
 
-<div id='tableContainer'>
-    <p class='h'> Map </p>
+<div id='tableNavigator'>
+    <div id='tableContainer' style="border: 0; padding: 0; margin: 0">
+        <p class='h'> Map </p>
+    </div>
+    <p class="h"> Change Map Scale </p>
+    <input type='button' class='scale' id='plus' value='+'/> <input type='button' class='scale' id='minus' value='-'/>
+
 </div>
 
 <div id='modSelectorContainer'>
@@ -105,17 +111,17 @@
     const modsContent = [false, 'align-justify', 'home', 'flag'];
     const config = {
         mapSize: {
-            x: 7,
-            // x: prompt('Enter the width of the map you want to create:', '7') || 1,
-            // y: prompt('Enter the heights of the map you want to create:', '7') || 1,
-            y: 7,
+            // x: 7,
+            x: prompt('Enter the heights of the map you want to create:', '7') || 1,
+            y: prompt('Enter the width of the map you want to create:', '7') || 1,
+            // y: 7,
             z: 4
         }
     };
     let twoDim = true;
     let startPosition = null;
     let finishPosition = null;
-    const map = [];
+    let map = [];
     initMap();
 
     let modButtons = document.getElementsByName('mod');
@@ -131,6 +137,16 @@
     let diagonalMode = false;
 
     initStarter();
+
+    let currentScale = 10;
+    let currentCellStyle = {
+        width: '30px',
+        height: '30px',
+        fontSize: '100%',
+    };
+
+
+    initScaleMenu();
 
     let table;
     updateTable(map);
@@ -232,6 +248,43 @@
         });
     }
 
+    function initScaleMenu() {
+        const plus = document.getElementById('plus');
+        plus.onclick = () => {
+            currentScale += 1;
+            if (currentScale >= 20) {
+                plus.disabled = true;
+            }
+            if (currentScale > 1) {
+                minus.disabled = false;
+            }
+            applyScale();
+        };
+
+
+        const minus = document.getElementById('minus');
+        minus.onclick = () => {
+            currentScale -= 1;
+            console.log('new scale', currentScale);
+            if (currentScale < 20) {
+                plus.disabled = false;
+            }
+            if (currentScale <= 1) {
+                minus.disabled = true;
+            }
+            applyScale();
+        };
+
+    }
+
+    function applyScale() {
+        currentCellStyle.width = 30 * currentScale / 10 + 'px';
+        currentCellStyle.height = 30 * currentScale / 10 + 'px';
+        currentCellStyle.fontSize = currentScale * 10 + '%';
+
+        updateTable(map);
+    }
+
     function initMap() {
         for (let i = 0; i < config.mapSize.x; i++) {
             const row = [];
@@ -239,12 +292,20 @@
                 row.push({
                     mode: 0,
                     position: {
-                        x: i,
-                        y: j
+                        x: j,
+                        y: i
                     }
                 });
             }
             map.push(row);
+        }
+
+        for (let i = 0; i < map.length; i++) {
+            for (let j = 0; j < i; j++) {
+                const tmp = map[i][j];
+                map[i][j] = map[j][i];
+                map[j][i] = tmp;
+            }
         }
     }
 
@@ -257,6 +318,9 @@
             for (let j = 0; j < column.length; j++) {
                 const cell = column[j];
                 const td = document.createElement('td');
+                td.style.width = currentCellStyle.width;
+                td.style.height = currentCellStyle.height;
+                td.style.fontSize = currentCellStyle.fontSize;
                 td.id = mods[cell.mode];
                 updateCell(td, cell.content ? '' : cell.waveIndex);
 
@@ -275,7 +339,7 @@
     }
 
     function updateCell(td, waveIndex) {
-        if (waveIndex > 0) td.innerHTML = waveIndex % 1 ?  waveIndex.toFixed(1) : waveIndex;
+        if (waveIndex > 0) td.innerHTML = waveIndex % 1 ? waveIndex.toFixed(1) : waveIndex;
     }
 
     function setCell(td, cell) {
@@ -314,6 +378,7 @@
     function addIcon(td, cell) {
         const icon = document.createElement('i',);
         icon.className = cell.content;
+        icon.style.fontSize = currentCellStyle.fontSize;
         td.appendChild(icon);
     }
 
@@ -480,15 +545,15 @@
 
     function comeBackStep(position) {
         const arrowIconConfig = [
-            'step arrow-up',
-            'step arrow-down',
-            'step arrow-left',
-            'step arrow-right',
-            // for diagonal mode
-            'step arrow-up-right',
-            'step arrow-down-left',
-            'step arrow-up-left',
-            'step arrow-down-right',
+            'arrow-up',
+            'arrow-down',
+            'arrow-left',
+            'arrow-right',
+            // diagonal mode
+            'arrow-up-right',
+            'arrow-down-left',
+            'arrow-up-left',
+            'arrow-down-right',
         ];
         let neighborIndex;
         let lowestNeighbor;
