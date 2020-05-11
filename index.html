@@ -96,6 +96,7 @@
 
     <input type="button" id="start" value="Start"/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
+    <p><input type='checkbox' name='direction' value='finish'> 8 directional mode</p>
     <input type="button" id="next" value="Next Step" disabled="true"/>
 </div>
 
@@ -125,6 +126,7 @@
     // initLayerSelector();
 
     let stepMode = false;
+    let diagonalMode = false;
 
     initStarter();
 
@@ -188,16 +190,43 @@
     function initStarter() {
         const startButton = document.getElementById('start');
 
-        startButton.onclick = waveStart;
+        startButton.onclick = () => {
+            if (checkStartEndReady()) {
+                stepSwitches[0].disabled = true;
+                directionSwitches[0].disabled = true;
+                if (stepMode) {
+                    nextButton.disabled = !stepMode;
+                    nextButton.click();
+                    for (let i = 0; i < modButtons.length; i++) {
+                        modButtons[i].disabled = true;
+                    }
+                } else {
+                    waveStart()
+                }
+            }
+        };
 
         const nextButton = document.getElementById('next');
-        nextButton.onclick = nextStep();
+        // nextButton.onclick = nextStep();
+        nextButton.onclick = () => {
+            if (checkStartEndReady()) {
+                startButton.disabled = true;
+                stepSwitches[0].disabled = true;
+                directionSwitches[0].disabled = true;
+                nextStep();
+            }
+        };
 
-        const stepSwitch = document.getElementsByName('step');
-        stepSwitch[0].addEventListener('change', () => {
-            nextButton.disabled = stepMode;
+        const stepSwitches = document.getElementsByName('step');
+        stepSwitches[0].addEventListener('change', () => {
             stepMode = !stepMode;
-            console.log('stepMode', stepMode)
+            console.log('stepMode ===', stepMode)
+        });
+
+        const directionSwitches = document.getElementsByName('direction');
+        directionSwitches[0].addEventListener('change', () => {
+            diagonalMode = !diagonalMode;
+            console.log('diagonalMode ===', diagonalMode)
         });
     }
 
@@ -248,6 +277,7 @@
     }
 
     function setCell(td, cell) {
+        if (waveStarted) return;
         if (currentMod === 'start' && startPosition) {
             alert('There should be only one start, please select other block')
         } else if (currentMod === 'finish' && finishPosition) {
@@ -311,6 +341,12 @@
     let currentWaveIndex = 0;
     let currentBackIndex = 0;
     let finishFound = false;
+    let wayHomeFound = false;
+    let currentCell = null;
+
+    // step mode variables
+    let waveStarted = false;
+    let pathFinderStarted = false;
 
     function waveStep(position) {
         const x = position.x;
@@ -356,41 +392,91 @@
             }
         }
 
+
+        // if (diagonalMode) {
+        //     if (map[x + 1] && map[x + 1][y - 1] && !map[x + 1][y - 1].waveIndex) {
+        //         if (map[x + 1][y - 1].mode === 0) {
+        //             map [x + 1][y - 1].waveIndex = currentWaveIndex + 1;
+        //             nextElements.push({x: x + 1, y: y - 1})
+        //         } else if (map[x + 1][y - 1].mode === 3) {
+        //             finishFound = true;
+        //             map [x + 1][y - 1].waveIndex = currentWaveIndex + .6;
+        //         }
+        //     }
+        //
+        //     if (map[x - 1] && map[x - 1][y + 1] && !map[x - 1][y].waveIndex) {
+        //         if (map[x - 1][y + 1].mode === 0) {
+        //             map [x - 1][y + 1].waveIndex = currentWaveIndex + 1;
+        //             nextElements.push({x: x - 1, y: y + 1})
+        //         } else if (map[x - 1][y + 1].mode === 3) {
+        //             finishFound = true;
+        //             map [x - 1][y + 1].waveIndex = currentWaveIndex + .6;
+        //         }
+        //     }
+        //
+        //     if (map[x + 1] && map[x + 1][y + 1] && !map[x + 1][y + 1].waveIndex) {
+        //         if (map[x + 1][y + 1].mode === 0) {
+        //             map [x + 1][y + 1].waveIndex = currentWaveIndex + 1;
+        //             nextElements.push({x: x + 1, y: y + 1})
+        //         } else if (map[x + 1][y + 1].mode === 3) {
+        //             finishFound = true;
+        //             map [x + 1][y + 1].waveIndex = currentWaveIndex + .6;
+        //         }
+        //     }
+        //
+        //     if (map[x - 1] && map[x - 1][y - 1] && !map[x - 1][y - 1].waveIndex) {
+        //         if (map[x - 1][y - 1].mode === 0) {
+        //             map [x - 1][y - 1].waveIndex = currentWaveIndex + 1;
+        //             nextElements.push({x: x - 1, y: y - 1})
+        //         } else if (map[x - 1][y - 1].mode === 3) {
+        //             finishFound = true;
+        //             map [x - 1][y - 1].waveIndex = currentWaveIndex + 1;
+        //         }
+        //     }
+        // }
+
     }
 
-    function waveStart() {
+    function checkStartEndReady() {
         if (!startPosition) {
             alert('Please mark starting position before running');
+            return false;
         } else {
             if (!finishPosition) {
                 alert('Please mark finish position before running');
-            } else {
-                waveStep(startPosition);
-                currentWaveIndex++;
-                while (nextElements[0]) {
-                    elementsQueue = nextElements;
-                    nextElements = [];
+                return false;
+            } else return true;
+        }
+    }
 
-                    while (elementsQueue[0]) {
-                        waveStep(elementsQueue[0]);
-                        elementsQueue.splice(0, 1);
-                        if (finishFound) break;
-                    }
-                    currentWaveIndex++;
-                    updateTable(map);
-                    console.log('step ended');
-                    if (finishFound) {
-                        currentBackIndex = currentWaveIndex;
-                        currentWaveIndex = 0;
-                        break
-                    }
+    function waveStart() {
+        if (checkStartEndReady()) {
+            waveStep(startPosition);
+            currentWaveIndex++;
+            waveStarted = true;
+            while (nextElements[0]) {
+                elementsQueue = nextElements;
+                nextElements = [];
+
+                while (elementsQueue[0]) {
+                    waveStep(elementsQueue[0]);
+                    elementsQueue.splice(0, 1);
+                    if (finishFound) break;
                 }
-                console.log('wave ended');
+                currentWaveIndex++;
+                updateTable(map);
+                console.log('step ended');
                 if (finishFound) {
-                    findWayHome();
-                } else {
-                    alert('Sadly to say, but I do not know da wae');
+                    currentBackIndex = currentWaveIndex;
+                    currentWaveIndex = 0;
+                    break
                 }
+            }
+            console.log('wave ended');
+            if (finishFound) {
+                findWayHome();
+            } else {
+                alert('Sadly to say, but I do not know da wae');
             }
         }
     }
@@ -422,20 +508,84 @@
     }
 
     function findWayHome() {
-        if (startPosition && finishPosition) {
-            let currentCell = map[finishPosition.x][finishPosition.y];
-            while (currentCell && currentCell.mode !== 2) {
-                currentCell = comeBackStep(currentCell.position);
-                console.log('step back found');
-                updateTable(map);
-                currentBackIndex--;
-            }
-            console.log('way home found');
+        currentCell = map[finishPosition.x][finishPosition.y];
+        while (currentCell && currentCell.mode !== 2) {
+            currentCell = comeBackStep(currentCell.position);
+            console.log('step back found');
+            updateTable(map);
+            currentBackIndex--;
         }
+        wayHomeFound = true;
+        console.log('way home found');
     }
 
     function nextStep() {
+        if (wayHomeFound) {
+            alert('refresh page to start over')
+        } else {
+            if (finishFound) {
+                if (pathFinderStarted) {
+                    findWayHomeStep();
+                } else {
+                    currentCell = map[finishPosition.x][finishPosition.y];
+                    pathFinderStarted = true;
+                    findWayHomeStep();
+                }
+            } else {
+                if (waveStarted) {
+                    continueWave();
+                } else {
+                    startWaveStep()
+                }
+            }
+        }
+    }
 
+    function startWaveStep() {
+        waveStep(startPosition);
+        currentWaveIndex++;
+        waveStarted = true;
+        updateTable(map);
+    }
+
+    function continueWave() {
+        if (nextElements[0]) {
+            elementsQueue = nextElements;
+            nextElements = [];
+
+            while (elementsQueue[0]) {
+                waveStep(elementsQueue[0]);
+                elementsQueue.splice(0, 1);
+                if (finishFound) break;
+            }
+            currentWaveIndex++;
+            updateTable(map);
+            console.log('step ended');
+            if (finishFound) {
+                currentBackIndex = currentWaveIndex;
+                currentWaveIndex = 0;
+                nextElements = [];
+            }
+        } else {
+            if (!finishFound) {
+                alert('Sadly to say, but I do not know da wae');
+                wayHomeFound = true;
+            }
+        }
+
+
+    }
+
+    function findWayHomeStep() {
+        if (currentCell && currentCell.mode !== 2) {
+            currentCell = comeBackStep(currentCell.position);
+            console.log('step back found');
+            updateTable(map);
+            currentBackIndex--;
+        } else {
+            wayHomeFound = true;
+            console.log('way home found');
+        }
     }
 
     console.log(map);
