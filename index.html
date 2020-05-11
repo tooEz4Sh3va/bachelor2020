@@ -348,7 +348,45 @@
     let waveStarted = false;
     let pathFinderStarted = false;
 
+    function waveNeighbor(x, y, nextWaveIndex) {
+        if (map[x] && map[x][y] && (!map[x][y].waveIndex || map[x][y].waveIndex > +nextWaveIndex.toFixed(1))) {
+            if (map[x][y].mode === 0) {
+                map [x][y].waveIndex = +nextWaveIndex.toFixed(1);
+                nextElements.push({x: x, y: y})
+            } else if (map[x][y].mode === 3) {
+                finishFound = true;
+                map [x + 1][y].waveIndex = +nextWaveIndex.toFixed(1);
+            }
+        }
+    }
+
     function waveStep(position) {
+        const x = position.x;
+        const y = position.y;
+        const currentWaveIndex = map[x][y].waveIndex || 0;
+
+        [
+            [x + 1, y],
+            [x - 1, y],
+            [x, y + 1],
+            [x, y - 1],
+        ].forEach(el => {
+            waveNeighbor(el[0], el[1], currentWaveIndex + 1);
+        });
+
+        if (diagonalMode) {
+            [
+                [x + 1, y - 1],
+                [x - 1, y + 1],
+                [x + 1, y + 1],
+                [x - 1, y - 1],
+            ].forEach(el => {
+                waveNeighbor(el[0], el[1], currentWaveIndex + 1.4);
+            });
+        }
+    }
+
+    function waveStepOLD(position) {
         const x = position.x;
         const y = position.y;
 
