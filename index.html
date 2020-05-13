@@ -73,6 +73,14 @@
     </div>
     <p class="h"> Change Map Scale </p>
     <input type='button' class='scale' id='plus' value='+'/> <input type='button' class='scale' id='minus' value='-'/>
+    <br>
+    <p class="h"> Create, Export or Import Map </p>
+    <input type='button' class='file' id='newMap' value='Create New Map'/> <input type='button' class='file' id='saveMap' value='Export Map to file...' title="Wave indexes will not save, so you can re-use this map after re-uploading it" disabled/>
+    <p> Or just Import your pre-made map! </p>
+    <input type='file' class='file' id='loadMapImport' value='Import Map from .json file...' accept=".json"/>
+    <br>
+    <input type='button' class='file' id='loadMap' value='Load Map...' style="margin-top: 4px"/>
+
 
 </div>
 
@@ -100,21 +108,21 @@
 <div id='buttonsContainer'>
     <p class='h'> Route tracing </p>
 
-    <input type="button" id="start" value="Start"/>
+    <input type="button" id="start" value="Start" disabled/>
     <p><input type='checkbox' name='step' value='finish'> Step-by-step mode</p>
     <p><input type='checkbox' name='direction' value='finish'> 8 directional mode</p>
-    <input type="button" id="next" value="Next Step" disabled="true"/>
+    <input type="button" id="next" value="Next Step" disabled/>
 </div>
 
 <script>
     const mods = ['empty', 'wall', 'start', 'finish', 'path'];
     const modsContent = [false, 'align-justify', 'home', 'flag'];
-    const config = {
+    let config = {
         mapSize: {
-            // x: 7,
-            x: prompt('Enter the heights of the map you want to create:', '7') || 1,
-            y: prompt('Enter the width of the map you want to create:', '7') || 1,
-            // y: 7,
+            x: 7,
+            // x: prompt('Enter the heights of the map you want to create:', '7') || 1,
+            // y: prompt('Enter the width of the map you want to create:', '7') || 1,
+            y: 7,
             z: 4
         }
     };
@@ -122,7 +130,7 @@
     let startPosition = null;
     let finishPosition = null;
     let map = [];
-    initMap();
+    // initMap();
 
     let modButtons = document.getElementsByName('mod');
     let currentMod = 'empty';
@@ -136,6 +144,8 @@
     let stepMode = false;
     let diagonalMode = false;
 
+    const startButton = document.getElementById('start');
+
     initStarter();
 
     let currentScale = 10;
@@ -148,9 +158,20 @@
 
     initScaleMenu();
 
-    let table;
-    updateTable(map);
+    initSaveMenu();
 
+    let table;
+
+    // updateTable(map);
+
+    function init(newMapNeeded) {
+        startButton.disabled = false;
+        if (newMapNeeded) {
+            map = [];
+            initMap();
+        }
+        updateTable(map);
+    }
 
     function initModSelector() {
         for (let i = 0; i < modButtons.length; i++) {
@@ -162,51 +183,50 @@
         }
     }
 
-    function initLayerSelector() {
-        layersSelect.addEventListener('change', layerChange);
+    // function initLayerSelector() {
+    //     layersSelect.addEventListener('change', layerChange);
+    //
+    //     updateDimMod();
+    //
+    //     function layerChange() {
+    //         if (currentZ !== this.value) {
+    //             currentZ = this.value;
+    //             updateTable(map)
+    //         }
+    //     }
+    //
+    //
+    //     for (let i = 0; i < dimButtons.length; i++) {
+    //         dimButtons[i].onchange = dimChange;
+    //     }
+    //
+    //     function dimChange() {
+    //         twoDim = this.value === '1';
+    //         updateDimMod();
+    //         currentZ = 0;
+    //         updateTable(map)
+    //     }
+    // }
 
-        updateDimMod();
-
-        function layerChange() {
-            if (currentZ !== this.value) {
-                currentZ = this.value;
-                updateTable(map)
-            }
-        }
-
-
-        for (let i = 0; i < dimButtons.length; i++) {
-            dimButtons[i].onchange = dimChange;
-        }
-
-        function dimChange() {
-            twoDim = this.value === '1';
-            updateDimMod();
-            currentZ = 0;
-            updateTable(map)
-        }
-    }
-
-    function updateDimMod() {
-        if (twoDim) {
-            Array.from(layersSelect.options).forEach(option => {
-                if (option.value !== 0) {
-                    option.hidden = true;
-                    option.selected = false;
-                } else {
-                    option.selected = true;
-                    layersSelect.selectedIndex = 0;
-                }
-            });
-        } else {
-            Array.from(layersSelect.options).forEach(option => {
-                option.hidden = false
-            })
-        }
-    }
+    // function updateDimMod() {
+    //     if (twoDim) {
+    //         Array.from(layersSelect.options).forEach(option => {
+    //             if (option.value !== 0) {
+    //                 option.hidden = true;
+    //                 option.selected = false;
+    //             } else {
+    //                 option.selected = true;
+    //                 layersSelect.selectedIndex = 0;
+    //             }
+    //         });
+    //     } else {
+    //         Array.from(layersSelect.options).forEach(option => {
+    //             option.hidden = false
+    //         })
+    //     }
+    // }
 
     function initStarter() {
-        const startButton = document.getElementById('start');
 
         startButton.onclick = () => {
             if (checkStartEndReady()) {
@@ -277,10 +297,124 @@
 
     }
 
+    function initSaveMenu() {
+        const newMap = document.getElementById('newMap');
+        newMap.onclick = () => {
+            const x = askToEnterSize('Enter the heights of the map you want to create:');
+            const y = askToEnterSize('Enter the width of the map you want to create:');
+            config = {
+                mapSize: {
+                    x: x,
+                    y: y,
+                    z: 4
+                }
+            };
+            newMap.disabled = true;
+            loadMap.disabled = true;
+            saveMap.disabled = false;
+            loadMapImport.disabled = true;
+            init(true);
+        };
+
+
+        const loadMapImport = document.getElementById('loadMapImport');
+
+        const loadMap = document.getElementById('loadMap');
+        loadMap.onclick = function () {
+            let files = loadMapImport.files;
+            console.log(files);
+            if (files.length <= 0) {
+                alert('Chose files first!');
+                return false;
+            }
+
+            let fr = new FileReader();
+
+            fr.onload = function (e) {
+                let result = JSON.parse(e.target.result);
+                console.log(result);
+
+                if (result.config && result.savedMap) {
+
+                    map = result.savedMap;
+                    config = result.config;
+                    finishPosition = result.finishPosition;
+                    startPosition = result.startPosition;
+                    newMap.disabled = true;
+                    loadMap.disabled = true;
+                    saveMap.disabled = false;
+                    loadMapImport.disabled = true;
+                    init(false);
+                    console.log(map);
+                } else {
+                    alert('There is something wrong with your file!')
+                }
+
+            };
+
+            fr.readAsText(files.item(0));
+        };
+
+
+        const saveMap = document.getElementById('saveMap');
+        saveMap.onclick = () => {
+            let mapToSave = Array.from(map);
+            for (let i = 0; i < mapToSave.length; i++) {
+                const column = mapToSave[i];
+                for (let j = 0; j < column.length; j++) {
+                    const cell = column[j];
+                    if (cell.mode === 4) {
+                        column[j] = {
+                            mode: 0,
+                            position: cell.position,
+                            // content: cell.content,
+                            // waveIndex: null,
+                        }
+                    } else {
+                        column[j] = {
+                            mode: cell.mode,
+                            position: cell.position,
+                            content: cell.content,
+                            // waveIndex: null,
+                        }
+                    }
+                }
+            }
+
+            let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify({
+                savedMap: mapToSave,
+                config: {
+                    mapSize: {
+                        x: config.mapSize.x,
+                        y: config.mapSize.y
+                    }
+                },
+                finishPosition: finishPosition,
+                startPosition: startPosition
+            }));
+            let downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "saved_map.json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        };
+
+    }
+
+    function askToEnterSize(msg) {
+        let size = Number(prompt(msg, '7'));
+        while (!size || size % 1 || size <= 0 || size > 126) {
+            size = Number(prompt('Please try other number', '7'));
+        }
+        return size;
+    }
+
     function applyScale() {
         currentCellStyle.width = 30 * currentScale / 10 + 'px';
         currentCellStyle.height = 30 * currentScale / 10 + 'px';
         currentCellStyle.fontSize = currentScale * 10 + '%';
+        currentCellStyle.iconSize = 18 * currentScale / 10 + 'px';
 
         updateTable(map);
     }
@@ -292,20 +426,12 @@
                 row.push({
                     mode: 0,
                     position: {
-                        x: j,
-                        y: i
+                        x: i,
+                        y: j
                     }
                 });
             }
             map.push(row);
-        }
-
-        for (let i = 0; i < map.length; i++) {
-            for (let j = 0; j < i; j++) {
-                const tmp = map[i][j];
-                map[i][j] = map[j][i];
-                map[j][i] = tmp;
-            }
         }
     }
 
@@ -378,7 +504,7 @@
     function addIcon(td, cell) {
         const icon = document.createElement('i',);
         icon.className = cell.content;
-        icon.style.fontSize = currentCellStyle.fontSize;
+        icon.style.fontSize = currentCellStyle.iconSize;
         td.appendChild(icon);
     }
 
@@ -417,12 +543,12 @@
 
     function waveNeighbor(x, y, nextWaveIndex) {
         if (map[x] && map[x][y] && (!map[x][y].waveIndex || map[x][y].waveIndex > +nextWaveIndex.toFixed(1))) {
-            if (map[x][y].mode === 0) {
+            if (map[x][y].mode === 0 || map[x][y].mode === 4) {
                 map [x][y].waveIndex = +nextWaveIndex.toFixed(1);
                 nextElements.push({x: x, y: y})
             } else if (map[x][y].mode === 3) {
                 finishFound = true;
-                biggestWaveIndex = map [x + 1][y].waveIndex = +nextWaveIndex.toFixed(1);
+                biggestWaveIndex = map [x][y].waveIndex = +nextWaveIndex.toFixed(1);
             }
         }
     }
@@ -440,6 +566,7 @@
             [x, y - 1],
         ].forEach(el => {
             waveNeighbor(el[0], el[1], currentWaveIndex + 1);
+            if (finishFound) return false;
         });
 
         if (diagonalMode) {
@@ -450,6 +577,7 @@
                 [x - 1, y - 1],
             ].forEach(el => {
                 waveNeighbor(el[0], el[1], currentWaveIndex + 1.4);
+                if (finishFound) return false;
             });
         }
     }
@@ -538,7 +666,8 @@
             if (finishFound) {
                 findWayHome();
             } else {
-                alert('Sadly to say, but I do not know da wae');
+                alert('Sadly to say, but I do not know da wae.');
+                alert('But you can save the map and re-upload it later!');
             }
         }
     }
@@ -615,6 +744,7 @@
             // currentBackIndex--;
         }
         wayHomeFound = true;
+        startButton.disabled = true;
         console.log('way home found');
         // console.log(map);
     }
@@ -668,7 +798,8 @@
             }
         } else {
             if (!finishFound) {
-                alert('Sadly to say, but I do not know da wae');
+                alert('Sadly to say, but I do not know da wae.');
+                alert('But you can save the map and re-upload it later!');
                 wayHomeFound = true;
             }
         }
@@ -684,6 +815,7 @@
             // currentBackIndex--;
         } else {
             wayHomeFound = true;
+            startButton.disabled = true;
             console.log('way home found');
             // console.log(map);
         }
