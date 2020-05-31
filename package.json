@@ -1,0 +1,20 @@
+{
+  "name": "bachelor2020",
+  "version": "1.0.0",
+  "description": "my program for bachelor",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node script.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tooEz4Sh3va/bachelor2020.git"
+  },
+  "author": "DanyShev",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tooEz4Sh3va/bachelor2020/issues"
+  },
+  "homepage": "https://github.com/tooEz4Sh3va/bachelor2020#readme"
+}
