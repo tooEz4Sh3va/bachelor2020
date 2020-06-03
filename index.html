@@ -16,6 +16,14 @@
             font-size: 100%;
         }
 
+        input.bonus {
+            width: 45px;
+        }
+
+        input.penalty {
+            width: 100px;
+        }
+
         p.h {
             font-weight: bold;
         }
@@ -36,6 +44,14 @@
 
         td#wall {
             background-color: #aa872a;
+        }
+
+        td#accelerator {
+            background-color: #5da92e;
+        }
+
+        td#slower {
+            background-color: #ffdc00;
         }
 
         td#start {
@@ -75,7 +91,11 @@
     <input type='button' class='scale' id='plus' value='+'/> <input type='button' class='scale' id='minus' value='-'/>
     <br>
     <p class="h"> Create, Export or Import Map </p>
-    <input type='button' class='file' id='newMap' value='Create New Map'/> <input type='button' class='file' id='saveMap' value='Export Map to file...' title="Wave indexes will not save, so you can re-use this map after re-uploading it" disabled/>
+    <input type='button' class='file' id='newMap' value='Create New Map'/> <input type='button' class='file'
+                                                                                  id='saveMap'
+                                                                                  value='Export Map to file...'
+                                                                                  title="Wave indexes will not save, so you can re-use this map after re-uploading it"
+                                                                                  disabled/>
     <p> Or just Import your pre-made map! </p>
     <input type='file' class='file' id='loadMapImport' value='Import Map from .json file...' accept=".json"/>
     <br>
@@ -83,13 +103,15 @@
 
 
 </div>
-
-<div id='modSelectorContainer'>
-    <p class='h'> Edit mode selector </p>
-    <input type='radio' name='mod' value='empty' checked> Empty <i class="trash" style="color: #000000"></i></p>
-    <input type='radio' name='mod' value='wall'> Wall <i class="align-justify" style="color: #aa872a"></i></p>
-    <input type='radio' name='mod' value='start'> Start <i class="home" style="color: #0000ff"></i></p>
-    <input type='radio' name='mod' value='finish'> Finish <i class="flag" style="color: #ee2426"></i></p>
+<div>
+<p id='modSelectorContainer'>
+<p class='h'> Edit mode selector </p>
+    <p><input type='radio' name='mod' value='empty' checked> Empty <i class="trash" style="color: #000000"></i></p>
+    <p><input type='radio' name='mod' value='wall'> Wall <i class="align-justify" style="color: #aa872a"></i></p>
+    <p><input type='radio' name='mod' value='accelerator'> Accelerator <i class="fast-forward" style="color: #5da92e"></i> cell bonus - <input type="number" step=".01" min=".1" max=".9" id="accelerator" value=".5" class="bonus"></p>
+    <p><input type='radio' name='mod' value='slower'> Slower <i class="mountains" style="color: #ffdc00"></i> cell penalty + <input type="number" step=".01" min=".1" max=".9" id="slower" value=".5" class="penalty"></p>
+    <p><input type='radio' name='mod' value='start'> Start <i class="home" style="color: #0000ff"></i></p>
+    <p><input type='radio' name='mod' value='finish'> Finish <i class="flag" style="color: #ee2426"></i></p>
 </div>
 
 <!--<div id='layerSelectorContainer'>-->
@@ -115,8 +137,8 @@
 </div>
 
 <script>
-    const mods = ['empty', 'wall', 'start', 'finish', 'path'];
-    const modsContent = [false, 'align-justify', 'home', 'flag'];
+    const mods = ['empty', 'wall', 'accelerator', 'slower', 'start', 'finish', 'path'];
+    const modsContent = [false, 'align-justify', 'fast-forward', 'mountains', 'home', 'flag'];
     let config = {
         mapSize: {
             x: 7,
@@ -134,6 +156,8 @@
 
     let modButtons = document.getElementsByName('mod');
     let currentMod = 'empty';
+    let acceleratorBonus = 0.5;
+    let slowerPenalty = 0.5;
     initModSelector();
 
     // let layersSelect = document.getElementById('layerSelector');
@@ -180,6 +204,18 @@
 
         function selectChange() {
             currentMod = this.value;
+        }
+
+        document.getElementById('accelerator').onchange = acceleratorOnChange;
+
+        function acceleratorOnChange() {
+            acceleratorBonus = this.value;
+        }
+
+        document.getElementById('slower').onchange = slowerOnChange;
+
+        function slowerOnChange() {
+            slowerPenalty = this.value;
         }
     }
 
@@ -232,6 +268,8 @@
             if (checkStartEndReady()) {
                 stepSwitches[0].disabled = true;
                 directionSwitches[0].disabled = true;
+                document.getElementById('accelerator').disabled = true;
+                document.getElementById('slower').disabled = true;
                 if (stepMode) {
                     nextButton.disabled = !stepMode;
                     nextButton.click();
@@ -363,11 +401,11 @@
                 const column = mapToSave[i];
                 for (let j = 0; j < column.length; j++) {
                     const cell = column[j];
-                    if (cell.mode === 4) {
+                    if (cell.data?.arrow) {
                         column[j] = {
-                            mode: 0,
+                            mode: cell.mode,
                             position: cell.position,
-                            // content: cell.content,
+                            content: modsContent[cell.mode],
                             // waveIndex: null,
                         }
                     } else {
@@ -447,11 +485,38 @@
                 td.style.width = currentCellStyle.width;
                 td.style.height = currentCellStyle.height;
                 td.style.fontSize = currentCellStyle.fontSize;
-                td.id = mods[cell.mode];
-                updateCell(td, cell.content ? '' : cell.waveIndex);
+                td.id = cell.data?.arrow ? mods[6] : mods[cell.mode];
 
                 if (cell.content) {
-                    addIcon(td, cell);
+                    if (cell.waveIndex) {
+                        if (cell.data?.arrow) {
+                            if (cell.mode === 2) {
+                                updateCell(td, '', '#5da92e');
+                                addIcon(td, cell);
+                            } else if (cell.mode === 3) {
+                                updateCell(td, '', '#ffdc00');
+                                addIcon(td, cell);
+                            } else {
+                                updateCell(td, '');
+                                addIcon(td, cell);
+                            }
+                        } else {
+                            if (cell.mode === 2) {
+                                updateCell(td, cell.waveIndex, cell.data?.arrow ? '#5da92e' : null);
+                            } else if (cell.mode === 3) {
+                                updateCell(td, cell.waveIndex, cell.data?.arrow ? '#ffdc00' : null);
+                            } else {
+                                updateCell(td, '');
+                                addIcon(td, cell);
+                            }
+                        }
+
+                    } else {
+                        updateCell(td, '');
+                        addIcon(td, cell);
+                    }
+                } else {
+                    updateCell(td, cell.waveIndex);
                 }
 
                 td.addEventListener('click', function tdClick() {
@@ -464,8 +529,9 @@
         }
     }
 
-    function updateCell(td, waveIndex) {
+    function updateCell(td, waveIndex, color) {
         if (waveIndex > 0) td.innerHTML = waveIndex % 1 ? waveIndex.toFixed(1) : waveIndex;
+        if (color) td.style.color = color;
     }
 
     function setCell(td, cell) {
@@ -543,10 +609,17 @@
 
     function waveNeighbor(x, y, nextWaveIndex) {
         if (map[x] && map[x][y] && (!map[x][y].waveIndex || map[x][y].waveIndex > +nextWaveIndex.toFixed(1))) {
-            if (map[x][y].mode === 0 || map[x][y].mode === 4) {
+            const mode = map[x][y].mode;
+            if (mode === 0) {
                 map [x][y].waveIndex = +nextWaveIndex.toFixed(1);
                 nextElements.push({x: x, y: y})
-            } else if (map[x][y].mode === 3) {
+            } else if (mode === 2) {
+                map [x][y].waveIndex = +nextWaveIndex.toFixed(1) - acceleratorBonus;
+                nextElements.push({x: x, y: y})
+            } else if (mode === 3) {
+                map [x][y].waveIndex = +nextWaveIndex.toFixed(1) + slowerPenalty;
+                nextElements.push({x: x, y: y})
+            } else if (mode === 5) {
                 finishFound = true;
                 biggestWaveIndex = map [x][y].waveIndex = +nextWaveIndex.toFixed(1);
             }
@@ -727,9 +800,9 @@
             }
         }
 
-        if (lowestNeighbor && lowestNeighbor.mode !== 2) {
+        if (lowestNeighbor && lowestNeighbor.mode !== 4) {
             lowestNeighbor.content = arrowIconConfig[neighborIndex];
-            lowestNeighbor.mode = 4;
+            lowestNeighbor.data = {arrow: true};
         }
 
         return lowestNeighbor;
@@ -737,7 +810,7 @@
 
     function findWayHome() {
         currentCell = map[finishPosition.x][finishPosition.y];
-        while (currentCell && currentCell.mode !== 2) {
+        while (currentCell && currentCell.mode !== 4) {
             currentCell = comeBackStep(currentCell.position);
             console.log('step back found');
             updateTable(map);
@@ -746,7 +819,7 @@
         wayHomeFound = true;
         startButton.disabled = true;
         console.log('way home found');
-        // console.log(map);
+        console.log(map);
     }
 
     function nextStep() {
@@ -808,7 +881,7 @@
     }
 
     function findWayHomeStep() {
-        if (currentCell && currentCell.mode !== 2) {
+        if (currentCell && currentCell.mode !== 4) {
             currentCell = comeBackStep(currentCell.position);
             console.log('step back found');
             updateTable(map);
