@@ -534,7 +534,6 @@
     let elementsQueue = [];
     let nextElements = [];
     let biggestWaveIndex = 0;
-    let currentBackIndex = 0;
     let finishFound = false;
     let wayHomeFound = false;
     let currentCell = null;
@@ -738,7 +737,6 @@
 
     function startWaveStep() {
         waveStep(startPosition);
-        // currentWaveIndex++;
         waveStarted = true;
         updateTable(map);
     }
@@ -753,12 +751,9 @@
                 elementsQueue.splice(0, 1);
                 if (finishFound) break;
             }
-            // currentWaveIndex++;
             updateTable(map);
             console.log('step ended');
             if (finishFound) {
-                // currentBackIndex = currentWaveIndex;
-                // currentWaveIndex = 0;
                 nextElements = [];
             }
         } else {
